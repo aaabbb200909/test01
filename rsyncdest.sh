@@ -16,12 +16,13 @@
 
 
 ######Configuration
-srcpaths="localhost::srcpath /tmp/perlgmetric" # filepath or remotehost::filepath, you can give multiple paths 
+srcpaths="localhost::srcpath /home/tatsuya/perlgmetric /var/log/sa" # filepath or remotehost::filepath, you can give multiple paths 
 ##
 ##
 destpath=/var/tmp/backups # filepath or remotehost::filepath, you can give only one destpath
 dayoffullbackup=1 #0-6 (0 for Sunday, 6 for Saturday)
-numoffullbackups=1 # 1 or 2: if 1, full backup should be nearly equal with incremental backup.
+backupgeneration=1 # 1 or 2: backups are kept for ${backupgeneration} weeks
+numoffullbackups=1 # 1 or 2: if 1, full backup should be nearly equal with incremental backup. if you set 2 for this, backupgeneration also should be 2.
 bwlimit=0 # Default: 0
 ##
 ##
@@ -65,10 +66,14 @@ then
 else
  lastfullbackupdate=${rmodforwhichdate}
 fi
+if [[ ${backupgeneration} -eq 1 ]]
+then
+ lastfullbackupdate=0
+fi
 
 
 numoffullbackupop=" --link-dest=../${rmodforwhichdate}${dayoffullbackup}"
-if [[ ${numoffullbackups} -eq 2 ]]
+if [[ ${numoffullbackups} -eq 2 || ${backupgeneration} -eq 1 ]]
 then
  numoffullbackupop=""
 fi
