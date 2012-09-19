@@ -16,7 +16,7 @@
 
 
 ######Configuration
-srcpaths="localhost::srcpath /home/tatsuya/perlgmetric /var/log/sa" # filepath or remotehost::filepath, you can give multiple paths 
+srcpaths="localhost::srcpath /var/log/sa" # filepath or remotehost::filepath, you can give multiple paths 
 ##
 ##
 destpath=/var/tmp/backups # filepath or remotehost::filepath, you can give only one destpath
@@ -51,10 +51,24 @@ if [[ -z ${dayoftheweek} ]]
 then
  dayoftheweek=$(date "+%w" )
 fi
+
 if [[ -z ${modforwhichdate} ]]
 then
  modforwhichdate=$(( ${whichdateinthisyear} % 2 ))
 fi
+
+## add the day before to --link-dest
+if [[ ${dayoftheweek} -eq 0 ]]
+then
+ pdayoftheweek=6
+ pmodforwhichdate=${rmodforwhichdate}
+else
+ pdayoftheweek=$(( ${dayoftheweek} - 1))
+ pmodforwhichdate=${modforwhichdate}
+fi
+previousdayop="--link-dest ../${pmodforwhichdate}${pdayoftheweek}"
+
+
 
 finallrc=0
 rmodforwhichdate=$(( ( ${modforwhichdate} + 1) % 2 ))
@@ -121,7 +135,9 @@ do
 	then
 	 echo "Peform full backup"
          set -x
-	 cd / && rsync -azR --delete --bwlimit ${bwlimit} ${numoffullbackupop} ${srcpath} ${destpath}/${srcpathmd5}/${modforwhichdate}${dayoftheweek}/
+	 cd / && rsync -azR --delete --bwlimit ${bwlimit} ${previousdayop} \
+${numoffullbackupop} \
+${srcpath} ${destpath}/${srcpathmd5}/${modforwhichdate}${dayoftheweek}/
 	 re=$?
          set +x
 	 if [[ 0 -ne $re ]]
@@ -132,7 +148,9 @@ do
 	else
 	 echo "Perform differential backup:"
          set -x
-	 cd /  && rsync -azR --delete  --bwlimit ${bwlimit} --link-dest ../${lastfullbackupdate}${dayoffullbackup} ${srcpath} ${destpath}/${srcpathmd5}/${modforwhichdate}${dayoftheweek}/
+	 cd /  && rsync -azR --delete  --bwlimit ${bwlimit} ${previousdayop} \
+--link-dest ../${lastfullbackupdate}${dayoffullbackup} \
+${srcpath} ${destpath}/${srcpathmd5}/${modforwhichdate}${dayoftheweek}/
 	 re=$?
          set +x
 	 if [[ 0 -ne $re ]]
